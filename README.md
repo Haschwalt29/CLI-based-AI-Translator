@@ -218,38 +218,6 @@ ${chunk}
 
 ---
 
-## Correctness, Efficiency, Scalability
-
-### ✅ Correctness
-
-* **Deterministic defaults**: `temperature=0.2` to reduce variance.
-* **Segmentation & reassembly** to keep context and avoid truncation.
-* **Back‑translation check** (optional): translate result → source and compute similarity score.
-* **Glossary enforcement**: preserves domain terms ("GPU", product names).
-* **Regression tests** with a small parallel corpus.
-
-### ⚡ Efficiency
-
-* **Content‑addressed cache** with high hit rate for repeated texts.
-* **Batching** small sentences into a single API call to reduce overhead.
-* **Streaming** response (when supported) to start printing early.
-* **Language auto‑detect** to skip no‑op translations.
-
-### 📈 Scalability
-
-* **Server mode** with FastAPI + async workers.
-* **Request queue** (e.g., in‑memory or Redis) + concurrency controls.
-* **Horizontal scale**: run multiple replicas behind a load balancer.
-* **Circuit breaker** for upstream API failures; graceful degradation to cache.
-
-> **How this maps to evaluation:**
->
-> * **Correctness**: glossary + back‑translation + tests → accurate output.
-> * **Efficiency**: caching + batching → lower latency & cost.
-> * **Scalability**: server mode + queue + autoscaling → handles high traffic.
-
----
-
 ## Testing Plan
 
 1. **Unit tests**: CLI args, segmentation, hashing, cache, glossary rules.
