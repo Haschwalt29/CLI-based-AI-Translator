@@ -287,6 +287,41 @@ ${chunk}
 }
 ```
 ---
+**Dynamic Prompt Implementation in Tranzio**
+```
+{
+  "system": "You are Tranzio, an AI-powered CLI translator. Translate the user's input text into the requested target language accurately, preserving tone and context. Always return the output in structured JSON.",
+  "user_dynamic": "Translate the following text from {{source_language}} to {{target_language}}:\n\"{{user_input}}\"",
+  "expected_output": {
+    "translation": "<dynamic_translation_here>"
+  }
+}
+```
+How It Works
+
+* {{source_language}} → dynamically replaced with the language the user inputs
+
+* {{target_language}} → dynamically replaced with the requested target language
+
+* {{user_input}} → dynamically replaced with the actual text the user wants to translate
+  
+Gemini receives a fresh, personalized prompt every time based on the inputs
+
+Final Prompt Sent to Gemini 👇
+```
+{
+  "system": "You are Tranzio, an AI-powered CLI translator. Translate the user's input text into the requested target language accurately, preserving tone and context. Always return the output in structured JSON.",
+  "user": "Translate the following text from English to French:\n\"Keep pushing forward, no matter how hard it gets.\""
+}
+```
+
+Gemini Response 👇
+```
+{
+  "translation": "Continue d'avancer, peu importe la difficulté."
+}
+```
+---
 
 ## Testing Plan
 
