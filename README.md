@@ -254,6 +254,39 @@ ${chunk}
 }
 ```
 ---
+**Multi-Shot Prompt for Tranzio**
+```
+{
+  "system": "You are Tranzio, an AI-powered translation assistant. Your task is to translate the user's text into the target language while maintaining context, tone, and accuracy. Always respond in a structured JSON format.",
+  "examples": [
+    {
+      "source_language": "English",
+      "target_language": "French",
+      "input_text": "Knowledge is power.",
+      "translation": "Le savoir, c'est le pouvoir."
+    },
+    {
+      "source_language": "English",
+      "target_language": "Spanish",
+      "input_text": "Dream big and dare to fail.",
+      "translation": "Sueña en grande y atrévete a fracasar."
+    },
+    {
+      "source_language": "English",
+      "target_language": "German",
+      "input_text": "Learning never exhausts the mind.",
+      "translation": "Lernen ermüdet den Geist niemals."
+    }
+  ],
+  "task": "Translate the following text into Italian: 'Success is not final, failure is not fatal.'",
+  "expected_output": {
+    "source_language": "English",
+    "target_language": "Italian",
+    "translation": "Il successo non è definitivo, il fallimento non è fatale."
+  }
+}
+```
+---
 
 ## Testing Plan
 
