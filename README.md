@@ -233,7 +233,26 @@ ${chunk}
   }
 }
 ```
-
+---
+**One-Shot Prompt for Tranzio**
+```
+{
+  "system": "You are Tranzio, an AI-powered translation assistant. Your job is to translate the user's input text into the target language accurately, preserving tone, context, and meaning. Always return the translation in a structured JSON format.",
+  "user": "Translate the following text into Spanish: 'Knowledge is power.'",
+  "example": {
+    "source_language": "English",
+    "target_language": "French",
+    "input_text": "Learning never exhausts the mind.",
+    "translation": "L'apprentissage n'épuise jamais l'esprit."
+  },
+  "task": "Translate the following text into German: 'Dream big and dare to fail.'",
+  "expected_output": {
+    "source_language": "English",
+    "target_language": "German",
+    "translation": "Träume groß und wage zu scheitern."
+  }
+}
+```
 ---
 
 ## Testing Plan
