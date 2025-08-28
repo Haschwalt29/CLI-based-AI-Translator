@@ -322,6 +322,47 @@ Gemini Response 👇
 }
 ```
 ---
+# Chain-of-Thought Prompt Implementation
+```
+{
+  "system": "You are Tranzio, an AI-powered CLI translator. You translate user text into the requested target language accurately while preserving tone and meaning. Think step by step internally, but only output the final translation in JSON.",
+  "user": "Translate the following text from {{source_language}} to {{target_language}}:\n\"{{user_input}}\"",
+  "expected_output": {
+    "translation": "<final_translation>"
+  }
+}
+```
+**How It Works**
+
+Gemini internally breaks down the task step by step → identifies tone, context, grammar
+
+But the final output is always clean and structured JSON → no reasoning shown to the user
+
+This ensures translations are context-aware and semantically accurate
+
+Final Prompt Sent to Gemini 👇
+```
+{
+  "system": "You are Tranzio, an AI-powered CLI translator. You translate user text into the requested target language accurately while preserving tone and meaning. Think step by step internally, but only output the final translation in JSON.",
+  "user": "Translate the following text from English to Spanish:\n\"Success comes to those who never stop learning.\""
+}
+```
+
+Gemini Internal Reasoning 🧩 (Hidden from user)
+
+Understand the tone → motivational
+
+Identify meaning → "Success" is linked to "continuous learning"
+
+Translate while preserving tone and flow
+
+Gemini Output 👇
+```
+{
+  "translation": "El éxito llega a quienes nunca dejan de aprender."
+}
+```
+---
 
 ## Testing Plan
 
