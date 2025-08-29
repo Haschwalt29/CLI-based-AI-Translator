@@ -16,6 +16,13 @@ export const logTokens = async (usageMetadata) => {
     return;
   }
 
+  // Simple token logging as requested
+  console.log(`
+🔹 Prompt Tokens: ${usageMetadata.promptTokenCount || 0}
+🔹 Candidates Tokens: ${usageMetadata.candidatesTokenCount || 0}
+🔹 Total Tokens: ${usageMetadata.totalTokenCount || 0}
+`);
+
   const {
     promptTokenCount = 0,
     candidatesTokenCount = 0,
@@ -67,7 +74,7 @@ const storeTokenUsage = async (usageData) => {
     // await db.tokenUsage.create(usageData);
     
   } catch (error) {
-    console.error('❌ Failed to store token usage data:', error.message);
+    console.error(' Failed to store token usage data:', error.message);
   }
 };
 
@@ -84,6 +91,8 @@ export const getTokenUsageSummary = () => {
     averageTokensPerRequest: 0
   };
 };
+
+
 
 /**
  * Format token count for display
