@@ -1,417 +1,219 @@
-# Tranzio
+# 🌍 Tranzio - CLI-based AI Translator
 
-> **An AI-powered CLI translator that converts text into your target language using Gemini for accurate, configurable translations.**
----
+A powerful CLI-based translator application using Google's Gemini API with advanced prompting strategies, RAG support, and structured output.
 
-## Overview
+## ✨ Features
 
-**Tranzio** is a fast, minimal **command‑line translator**. You provide any text (via flag, file, or STDIN) and a **target language**; Tranzio calls the **Gemini API** to produce accurate translations while preserving formatting, code blocks, and domain terminology.
+- **Multi-Strategy Prompting**: Zero-shot, one-shot, multi-shot, and dynamic prompting
+- **Function Calling**: Structured JSON output using Gemini's function calling capabilities
+- **RAG Support**: Local glossary for frequently used translations
+- **Token Logging**: Monitor API usage and costs
+- **Structured Output**: Consistent JSON response format
+- **Auto-language Detection**: Automatically detect source language
 
-Tranzio is designed around three goals:
-
-* **Correctness** → faithful, context‑aware translation
-* **Efficiency** → snappy CLI UX with caching & batching
-* **Scalability** → optional server mode + queue to handle many requests
-
-> ✅ Works great for: quick translations, docs localization, logs/tools automation, batch CSV translation, and CI/CD pipelines.
-
----
-
-## Key Features
-
-* 🧠 **Gemini‑powered** translations with tunable parameters (temperature, style, formality).
-* 🧩 **Multiple input modes**: flag (`--text`), file (`--file`), or piped STDIN.
-* 🗂️ **Batch mode**: translate a CSV column at once.
-* 💾 **Deterministic caching** (content‑addressed) to avoid re‑paying for identical requests.
-* 📐 **Format preservation**: keeps Markdown/code blocks and placeholders `{like_this}` intact.
-* 🧪 **Quality checks**: back‑translation & glossary support.
-* 📦 **Server mode (optional)**: expose HTTP API for parallel requests.
-* 🔍 **Verbose/debug mode**: trace prompts, tokens, latency.
-
----
-
-## Architecture
+## 🏗️ Project Structure
 
 ```
-+-------------------------+
-|       CLI (Typer)       |  <-- args parsing, UX, help, subcommands
-+-----------+-------------+
-            |
-            v
-+-------------------------+      +------------------------+
-|  Translator Service     |<---->|  Cache (SQLite / FS)   |
-|  - segmentation         |      |  - sha256(text+opts)   |
-|  - batching             |      +------------------------+
-|  - prompt builder       |
-|  - glossary enforcement |
-+-----------+-------------+
-            |
-            v
-+-------------------------+
-|   Gemini API Adapter    |  <-- retries, rate limits, timeout
-+-------------------------+
-            |
-            v
-+-------------------------+
-|  Output Renderer        |  <-- text / json / csv, file write
-+-------------------------+
+tranzio/
+│── src/
+│ ├── translator.js          # Main translation engine
+│ ├── prompts/               # Prompt templates
+│ │ ├── zeroShot.js         # Zero-shot prompting
+│ │ ├── oneShot.js          # One-shot prompting
+│ │ ├── multiShot.js        # Multi-shot prompting
+│ │ ├── dynamic.js          # Dynamic strategy selection
+│ │ └── chainOfThought.js   # Chain-of-thought prompting
+│ ├── functions.js           # Gemini function calling schemas
+│ ├── rag.js                # RAG module with local glossary
+│ ├── utils/
+│ │ ├── tokenLogger.js      # Token usage monitoring
+│ │ └── structuredOutput.js # Response formatting
+│ └── cli.js                # CLI interface (to be implemented)
+│
+├── .env                     # Environment configuration
+├── package.json            # Dependencies and scripts
+└── README.md               # This file
 ```
 
-**Implementation choices**
+## 🚀 Quick Start
 
-* Language: **Python 3.10+** (Typer/Argparse), or Node.js (Commander). This README uses Python examples.
-* Caching: **SQLite** (default) or **file‑based** (pluggable).
-* Concurrency: async batching for paragraphs/sentences.
-* Optional HTTP layer: **FastAPI**.
-
----
-
-## Data Flow
-
-1. **Input**: `--text`, `--file`, `stdin`, or `--csv` with `--col`.
-2. **Preprocess**: detect language, segment into sentences/blocks.
-3. **Cache check**: hash (text+src+dst+settings+glossary) → hit returns immediately.
-4. **Prompt build**: system & user prompts with constraints (tone, format, placeholders).
-5. **Call Gemini**: robust retries with backoff; low temperature by default.
-6. **Postprocess**: reassemble, preserve formatting, apply glossary, validate.
-7. **Optional QA**: back‑translate & compare; log score.
-8. **Render**: print to stdout or write to file/CSV/JSON.
-
----
-
-## Installation & Setup
-
-### Prerequisites
-
-* Python 3.10+
-* A **Gemini API key** (from Google AI Studio or Vertex AI)
-
-### Quick Start
+### 1. Install Dependencies
 
 ```bash
-# 1) Clone
-git clone https://github.com/yourname/tranzio.git && cd tranzio
-
-# 2) Create env
-python -m venv .venv && source .venv/bin/activate   # (Windows: .venv\\Scripts\\activate)
-
-# 3) Install
-pip install -r requirements.txt
-
-# 4) Configure API key
-cp .env.example .env
-# then edit .env to set GEMINI_API_KEY=***
-
-# 5) Smoke test
-python -m tranzio --text "Hello world" --lang fr --verbose
+npm install
 ```
 
-**`requirements.txt` (suggested)**
+### 2. Environment Setup
 
-```
-typer
-rich
-python-dotenv
-httpx
-pydantic
-orjson
-sqlitedict
-langdetect
-nltk
-fastapi
-uvicorn
-```
-
-**`.env.example`**
-
-```
-GEMINI_API_KEY=
-DEFAULT_TARGET_LANG=en
-CACHE_BACKEND=sqlite  # sqlite | fs | none
-```
-
----
-
-## Usage
-
-### Basic
+Copy `env.example` to `.env` and add your Gemini API key:
 
 ```bash
-# Translate inline text to French
-tranzio --text "Good morning" --lang fr
-
-# Same, via STDIN
-echo "Good morning" | tranzio --lang fr
-
-# Translate a file to German
-tranzio --file notes.md --lang de --out notes.de.md
+cp env.example .env
 ```
 
-### Batch CSV
-
-```bash
-# Translate column "text" to Spanish and write CSV
-tranzio --csv data/input.csv --col text --lang es --out data/output.es.csv
+Edit `.env`:
+```env
+GEMINI_API_KEY=your_actual_api_key_here
+GEMINI_MODEL=gemini-pro
 ```
 
-### Options (common)
+### 3. Get Gemini API Key
 
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create a new API key
+3. Add it to your `.env` file
+
+## 📚 Usage Examples
+
+### Basic Translation
+
+```javascript
+import TranzioTranslator from './src/translator.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const translator = new TranzioTranslator();
+
+// Translate text
+const result = await translator.translate(
+  "Hello, how are you?",
+  "Spanish"
+);
+
+console.log(result);
 ```
---lang, -l             Target language code or name (e.g., fr, de, "French")
---source, -s           Source language (auto if omitted)
---style                tone: formal|neutral|casual (default: neutral)
---temperature          0.0–1.0 (default: 0.2)
---glossary             path to JSON glossary {"en": {"GPU": "GPU"}}
---format               text|json|md|csv (default: text)
---out                  output file path
---no-cache             bypass cache for this run
---verbose              print debug info (timings, tokens, cache events)
+
+### Using Different Prompt Strategies
+
+```javascript
+import { getPromptByStrategy } from './src/prompts/dynamic.js';
+
+// Force specific strategy
+const prompt = getPromptByStrategy(
+  "It's raining cats and dogs",
+  "French",
+  "English",
+  "multi" // Force multi-shot prompting
+);
 ```
 
-### Server Mode (optional)
+### RAG Operations
 
-```bash
-# Start HTTP API on port 8000
-tranzio serve --host 0.0.0.0 --port 8000
+```javascript
+import { checkRAG, addToGlossary, getGlossaryStats } from './src/rag.js';
 
-# Example request
-curl -X POST http://localhost:8000/translate \
-  -H 'Content-Type: application/json' \
-  -d '{"text":"Hello","target":"fr"}'
+// Check if translation exists locally
+const result = await checkRAG("hello", "Spanish");
+
+// Add new translation
+await addToGlossary("good morning", "buenos días", "Spanish", "English");
+
+// Get statistics
+const stats = await getGlossaryStats();
 ```
 
----
+## 🔧 Core Components
 
-## Configuration
+### 1. Translator Engine (`src/translator.js`)
+- Main translation logic using Gemini API
+- Automatic prompt strategy selection
+- Function calling for structured output
+- Fallback mechanisms
 
-* **Caching**: SQLite cache keyed on `sha256(text + source + target + options + glossaryHash)`.
-* **Segmentation**: NLTK Punkt; falls back to paragraph split for code/markdown.
-* **Retries**: exponential backoff (`1s, 2s, 4s`, jitter), max 3 attempts.
-* **Rate limits**: token budget & QPS guard; queue when in server mode.
-* **Glossary**: JSON mapping per language; applied post‑translation with exact/regex rules.
+### 2. Prompt Templates (`src/prompts/`)
+- **Zero-shot**: Basic instructions without examples
+- **One-shot**: Single example for better understanding
+- **Multi-shot**: Multiple examples for complex scenarios
+- **Dynamic**: Automatic strategy selection based on text complexity
+- **Chain-of-thought**: Step-by-step reasoning prompts
 
----
+### 3. Function Calling (`src/functions.js`)
+- Gemini function schemas for structured output
+- Parameter validation
+- Multiple schema options (full vs. simplified)
 
-## Prompting Strategy
+### 4. RAG Module (`src/rag.js`)
+- Local glossary for common translations
+- Partial matching for phrases
+- Persistent storage with fallback to defaults
+- Statistics and management functions
 
-**System prompt** (abridged):
+### 5. Utilities
+- **Token Logger**: Monitor API usage and costs
+- **Structured Output**: Consistent response formatting
 
-```
-You are Tranzio, an advanced AI-powered translation assistant.
-Your goal is to translate text into the target language as accurately as possible.
+## 📊 Response Format
 
-Rules:
-- Maintain original tone and meaning.
-- Preserve numbers, dates, names, and code snippets.
-- Always return the result in strict JSON format:
+All translations return structured JSON:
+
+```json
 {
-"translated_text": "<translation>",
-"detected_language": "<source language>"
+  "source_language": "English",
+  "target_language": "Spanish",
+  "translated_text": "Hola, ¿cómo estás?",
+  "status": "success",
+  "timestamp": "2024-01-01T12:00:00.000Z",
+  "confidence": 0.95,
+  "cultural_notes": "Direct translation",
+  "error": null
 }
 ```
 
-**User prompt template**:
+## 🎯 Prompting Strategies
 
-```
-<TARGET>=${target_lang}
-<STYLE>=${style}
-<CONTEXT>=${optional_context}
+### Zero-Shot
+- Best for: Simple, straightforward translations
+- Use case: Basic phrases, common words
 
-TEXT:
-${chunk}
-```
----
-**Zero-Shot Prompt for Tranzio**
-```
-{
-  "system": "You are Tranzio, an AI-powered translation assistant. Your task is to translate the user's input text into the target language accurately, while maintaining tone, context, and meaning. Do not explain anything; only return the translation in structured JSON format.",
-  "user": "Translate the following text into French: 'The future belongs to those who believe in their dreams.'",
-  "expected_output": {
-    "source_language": "English",
-    "target_language": "French",
-    "translation": "L'avenir appartient à ceux qui croient en leurs rêves."
-  }
-}
-```
----
-**One-Shot Prompt for Tranzio**
-```
-{
-  "system": "You are Tranzio, an AI-powered translation assistant. Your job is to translate the user's input text into the target language accurately, preserving tone, context, and meaning. Always return the translation in a structured JSON format.",
-  "user": "Translate the following text into Spanish: 'Knowledge is power.'",
-  "example": {
-    "source_language": "English",
-    "target_language": "French",
-    "input_text": "Learning never exhausts the mind.",
-    "translation": "L'apprentissage n'épuise jamais l'esprit."
-  },
-  "task": "Translate the following text into German: 'Dream big and dare to fail.'",
-  "expected_output": {
-    "source_language": "English",
-    "target_language": "German",
-    "translation": "Träume groß und wage zu scheitern."
-  }
-}
-```
----
-**Multi-Shot Prompt for Tranzio**
-```
-{
-  "system": "You are Tranzio, an AI-powered translation assistant. Your task is to translate the user's text into the target language while maintaining context, tone, and accuracy. Always respond in a structured JSON format.",
-  "examples": [
-    {
-      "source_language": "English",
-      "target_language": "French",
-      "input_text": "Knowledge is power.",
-      "translation": "Le savoir, c'est le pouvoir."
-    },
-    {
-      "source_language": "English",
-      "target_language": "Spanish",
-      "input_text": "Dream big and dare to fail.",
-      "translation": "Sueña en grande y atrévete a fracasar."
-    },
-    {
-      "source_language": "English",
-      "target_language": "German",
-      "input_text": "Learning never exhausts the mind.",
-      "translation": "Lernen ermüdet den Geist niemals."
-    }
-  ],
-  "task": "Translate the following text into Italian: 'Success is not final, failure is not fatal.'",
-  "expected_output": {
-    "source_language": "English",
-    "target_language": "Italian",
-    "translation": "Il successo non è definitivo, il fallimento non è fatale."
-  }
-}
-```
----
-**Dynamic Prompt Implementation in Tranzio**
-```
-{
-  "system": "You are Tranzio, an AI-powered CLI translator. Translate the user's input text into the requested target language accurately, preserving tone and context. Always return the output in structured JSON.",
-  "user_dynamic": "Translate the following text from {{source_language}} to {{target_language}}:\n\"{{user_input}}\"",
-  "expected_output": {
-    "translation": "<dynamic_translation_here>"
-  }
-}
-```
-How It Works
+### One-Shot
+- Best for: Moderate complexity texts
+- Use case: Sentences with context
 
-* {{source_language}} → dynamically replaced with the language the user inputs
+### Multi-Shot
+- Best for: Complex texts, idioms, cultural nuances
+- Use case: Professional translations, creative content
 
-* {{target_language}} → dynamically replaced with the requested target language
+### Dynamic
+- Automatically selects the best strategy based on text analysis
+- Considers word count, idioms, special characters
 
-* {{user_input}} → dynamically replaced with the actual text the user wants to translate
-  
-Gemini receives a fresh, personalized prompt every time based on the inputs
+## 💰 Cost Monitoring
 
-Final Prompt Sent to Gemini 👇
-```
-{
-  "system": "You are Tranzio, an AI-powered CLI translator. Translate the user's input text into the requested target language accurately, preserving tone and context. Always return the output in structured JSON.",
-  "user": "Translate the following text from English to French:\n\"Keep pushing forward, no matter how hard it gets.\""
-}
-```
+The token logger provides detailed cost estimates:
+- Prompt tokens: $0.0005 per 1K tokens
+- Completion tokens: $0.0015 per 1K tokens
+- Real-time usage statistics
 
-Gemini Response 👇
-```
-{
-  "translation": "Continue d'avancer, peu importe la difficulté."
-}
-```
----
-# Chain-of-Thought Prompt Implementation
-```
-{
-  "system": "You are Tranzio, an AI-powered CLI translator. You translate user text into the requested target language accurately while preserving tone and meaning. Think step by step internally, but only output the final translation in JSON.",
-  "user": "Translate the following text from {{source_language}} to {{target_language}}:\n\"{{user_input}}\"",
-  "expected_output": {
-    "translation": "<final_translation>"
-  }
-}
-```
-**How It Works**
+## 🔮 Future Enhancements
 
-Gemini internally breaks down the task step by step → identifies tone, context, grammar
+- [ ] CLI interface with interactive prompts
+- [ ] Batch translation support
+- [ ] Translation memory and learning
+- [ ] Custom glossary management
+- [ ] API rate limiting and caching
+- [ ] Web interface
+- [ ] Mobile app
 
-But the final output is always clean and structured JSON → no reasoning shown to the user
+## 🤝 Contributing
 
-This ensures translations are context-aware and semantically accurate
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-Final Prompt Sent to Gemini 👇
-```
-{
-  "system": "You are Tranzio, an AI-powered CLI translator. You translate user text into the requested target language accurately while preserving tone and meaning. Think step by step internally, but only output the final translation in JSON.",
-  "user": "Translate the following text from English to Spanish:\n\"Success comes to those who never stop learning.\""
-}
-```
+## 📄 License
 
-Gemini Internal Reasoning 🧩 (Hidden from user)
+MIT License - see LICENSE file for details
 
-Understand the tone → motivational
+## 🆘 Support
 
-Identify meaning → "Success" is linked to "continuous learning"
-
-Translate while preserving tone and flow
-
-Gemini Output 👇
-```
-{
-  "translation": "El éxito llega a quienes nunca dejan de aprender."
-}
-```
----
-
-## Testing Plan
-
-1. **Unit tests**: CLI args, segmentation, hashing, cache, glossary rules.
-2. **Integration tests**: stubbed Gemini adapter; golden outputs.
-3. **E2E tests**: real API (gated with `RUN_E2E=1`), assert latency & status.
-4. **Quality tests**: compute BLEU/ChrF on a tiny parallel set (sanity check).
-
-**Example test matrix**
-
-* Languages: en→fr, en→de, en→hi, hi→en, en→es
-* Inputs: plain text, Markdown with code, placeholders `{name}`, CSV batch
+For issues and questions:
+1. Check the documentation
+2. Review existing issues
+3. Create a new issue with detailed description
 
 ---
 
-## Benchmarking & Metrics
-
-* **Latency**: p50, p95 end‑to‑end and model time.
-* **Cache hit rate**: % of requests served from cache.
-* **Throughput** (server mode): req/s at fixed QPS with concurrency N.
-* **Cost per 1k chars** (approx): tracked via counters.
-
-Simple harness:
-
-```
-tranzio bench --dataset samples/bench.txt --lang fr --concurrency 8 --repeat 5
-```
-
-Outputs CSV with timings and cache stats.
-
----
-
-## Error Handling & Reliability
-
-* Clear messages for: invalid language, missing key, network timeout, rate limit.
-* **Retries** with backoff on transient errors; stop on client errors.
-* **Idempotent**: cache prevents double‑work on re‑tries.
-* **Safe shutdown**: flush queues, persist partial outputs.
-
----
-
-## Security & Privacy
-
-* Do not log API keys or full payloads in verbose mode (hash only).
-* Optional **redaction** of emails/IDs before sending to API.
-* `.env` and cache directory are git‑ignored.
-
----
-
-
-
-
+**Built with ❤️ using Google's Gemini API**
