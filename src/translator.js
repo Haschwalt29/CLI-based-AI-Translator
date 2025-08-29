@@ -38,10 +38,8 @@ class TranzioTranslator {
       const result = await this.model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.3,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048,
+          temperature: 0.7,
+          maxOutputTokens: 500,
         },
         tools: [{ functionDeclarations: [functionSchema] }],
       });
@@ -49,6 +47,8 @@ class TranzioTranslator {
       const response = result.response;
       
       // Log token usage
+      const usage = response?.usageMetadata;
+      console.log("🔹 Tokens used:", usage);
       await logTokens(response.usageMetadata);
 
       // Extract function call result
